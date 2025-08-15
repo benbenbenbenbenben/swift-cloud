@@ -57,7 +57,8 @@ extension Builder {
                 targetName: targetName,
                 architecture: architecture,
                 imageName: imageName,
-                flags: ["--static-swift-stdlib"]
+                flags: ["--static-swift-stdlib"],
+                pre: "yum install -y libsodium libsodium-devel"
             )
         }
     }
