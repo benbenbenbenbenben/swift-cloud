@@ -31,7 +31,15 @@ extension AWS {
 
     public enum InstanceSecurityGroup: Sendable {
         case existing(String)
-        case new
+        case new(SecurityGroup)
+        func existingId() -> Output<String> {
+            switch self {
+            case .existing(let id):
+                return .init(stringLiteral: id)
+            case .new(let group):
+                return group.resource.id
+            }
+        }
     }
 
     /// Arguments used to configure an EC2 Instance component.
@@ -135,7 +143,7 @@ extension AWS {
                     type: "aws:ec2:NetworkInterface",
                     properties: [
                         "subnetId": args.subnetId,
-                        "securityGroups": [args.securityGroupId],
+                        "securityGroups": [args.securityGroupId?.existingId()],
                         "description": "\(instanceLogicalName)-nic",
                     ],
                     options: nil,
