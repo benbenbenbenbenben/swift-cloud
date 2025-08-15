@@ -26,7 +26,7 @@ extension AWS {
 
     public enum InstanceKeyPair: Sendable {
         case named(String)
-        case generated
+        case imported(String)
     }
 
     /// Arguments used to configure an EC2 Instance component.
@@ -85,6 +85,7 @@ extension AWS {
         private var eipResource: Resource? = nil
         private var volumeResources: [Resource] = []
         private var networkInterface: Resource? = nil
+        private var keyPairResource: Resource? = nil
 
         public var name: Output<String> {
             instanceResource.name
@@ -142,10 +143,27 @@ extension AWS {
             var instanceProperties: [String: AnyEncodable?] = [
                 "ami": .init(ami),
                 "instanceType": .init(args.instanceType),
-                "keyName": .init(args.key),
                 "userData": .init(args.userData),
                 "tags": .init(args.tags),
             ]
+
+            // Handle key pair argument: either reference an existing named key,
+            // generate a new KeyPair resource, or leave nil.
+            if let keyArg = args.key {
+                switch keyArg {
+                case .named(let existingName):
+                    // Use the provided key name as-is (references an existing key)
+                    instanceProperties["keyName"] = .init(existingName)
+                case .imported(let publicKey):
+                    // Create a KeyPair component and reference its name
+                    let kp = AWS.KeyPair("\(name)-key", publicKey: publicKey)
+                    keyPairResource = kp.key
+                    instanceProperties["keyName"] = .init(kp.id)
+                }
+            } else {
+                // No key specified — leave keyName unset to allow provider defaults
+                instanceProperties["keyName"] = nil
+            }
 
             // When a NIC is created, attach it to the instance via networkInterfaces block.
             if let nic = nicResource {
