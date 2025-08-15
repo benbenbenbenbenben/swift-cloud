@@ -26,6 +26,10 @@ extension Docker.Dockerfile {
         """
         FROM public.ecr.aws/lambda/provided:al2
 
+        # Add awslabs/aws-lambda-web-adapter (see: https://github.com/awslabs/aws-lambda-web-adapter)
+        ENV AWS_LWA_PORT=8080
+        COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+
         COPY ./.build/\(architecture.swiftBuildLinuxDirectory)/release/\(targetName) /var/runtime/bootstrap
         COPY ./.build/\(architecture.swiftBuildLinuxDirectory)/release/*.resources /var/runtime/
 
