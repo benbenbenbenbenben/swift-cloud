@@ -9,7 +9,7 @@ struct aws: AWSProject {
             "example-instance",
             args: .init(
                 ami: "ami-0634ecbc273c9df53",
-                keyName: "example-key",
+                key: .generated
             )
         )
         return [

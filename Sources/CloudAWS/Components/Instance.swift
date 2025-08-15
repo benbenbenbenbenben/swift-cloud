@@ -24,11 +24,16 @@ extension AWS {
         }
     }
 
+    public enum InstanceKeyPair: Sendable {
+        case named(String)
+        case generated
+    }
+
     /// Arguments used to configure an EC2 Instance component.
     public struct InstanceArgs: Sendable {
         public let ami: String?
         public let instanceType: String
-        public let keyName: String?
+        public let key: InstanceKeyPair?
         public let subnetId: String?
         public let securityGroupIds: [String]?
         public let userData: String?
@@ -41,7 +46,7 @@ extension AWS {
         public init(
             ami: String? = nil,
             instanceType: String = "t3.micro",
-            keyName: String? = nil,
+            key: InstanceKeyPair? = nil,
             subnetId: String? = nil,
             securityGroupIds: [String]? = nil,
             userData: String? = nil,
@@ -53,7 +58,7 @@ extension AWS {
         ) {
             self.ami = ami
             self.instanceType = instanceType
-            self.keyName = keyName
+            self.key = key
             self.subnetId = subnetId
             self.securityGroupIds = securityGroupIds
             self.userData = userData
@@ -137,7 +142,7 @@ extension AWS {
             var instanceProperties: [String: AnyEncodable?] = [
                 "ami": .init(ami),
                 "instanceType": .init(args.instanceType),
-                "keyName": .init(args.keyName),
+                "keyName": .init(args.key),
                 "userData": .init(args.userData),
                 "tags": .init(args.tags),
             ]
