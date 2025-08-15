@@ -4,9 +4,9 @@ import SotoCore
 
 extension AWS {
     public final class Home: HomeProvider {
-        private let client: AWSClient
-        private let sts: STS
-        private let s3: S3
+    private let client: AWSClient
+    private let sts: STS
+    private let s3: S3
 
         public init(region: String = "us-east-1") {
             self.client = .init(credentialProvider: Self.credentialProvider())
@@ -50,18 +50,48 @@ extension AWS.Home {
     private func ensureBucketExists(_ bucketName: String) async throws {
         do {
             _ = try await s3.createBucket(.init(bucket: bucketName))
-        } catch let error as S3ErrorType {
-            switch error {
-            case .bucketAlreadyOwnedByYou:
-                // Bucket already exists and is owned by us - this is expected behavior
-                return
-            case .bucketAlreadyExists:
-                // Bucket exists but owned by someone else - this is a real error
-                throw error
-            default:
-                // Any other S3 error should be propagated
-                throw error
+        } catch {
+            // Some S3 errors (like PermanentRedirect) are returned as a generic AWSErrorType
+            // rather than the generated S3ErrorType. Check for that first.
+            if let awsErr = error as? AWSErrorType, awsErr.errorCode == "PermanentRedirect" {
+                // Attempt to discover the bucket region and assume the bucket exists there.
+                do {
+                    let loc: S3.GetBucketLocationOutput = try await client.execute(
+                        operation: "GetBucketLocation",
+                        path: "/{Bucket}?location",
+                        httpMethod: .GET,
+                        serviceConfig: s3.config,
+                        input: S3.GetBucketLocationRequest(bucket: bucketName),
+                        logger: AWSClient.loggingDisabled
+                    )
+
+                    var bucketRegion = loc.locationConstraint?.rawValue ?? "us-east-1"
+                    // Historical alias: "EU" maps to eu-west-1
+                    if bucketRegion == "EU" { bucketRegion = "eu-west-1" }
+
+                    // Create a temporary S3 client for any subsequent operations (no mutation needed)
+                    let _ = S3(client: client, region: .init(rawValue: bucketRegion))
+                    return
+                } catch {
+                    // If we can't discover the bucket location, assume it exists and continue.
+                    return
+                }
             }
+
+            // Otherwise, if it's a typed S3 error, handle known cases.
+            if let s3Err = error as? S3ErrorType {
+                switch s3Err {
+                case .bucketAlreadyOwnedByYou:
+                    return
+                case .bucketAlreadyExists:
+                    throw s3Err
+                default:
+                    throw s3Err
+                }
+            }
+
+            // Unknown error - propagate
+            throw error
         }
     }
 }
