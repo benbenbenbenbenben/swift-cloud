@@ -29,13 +29,18 @@ extension AWS {
         case imported(String)
     }
 
+    public enum InstanceSecurityGroup: Sendable {
+        case existing(String)
+        case new
+    }
+
     /// Arguments used to configure an EC2 Instance component.
     public struct InstanceArgs: Sendable {
         public let ami: String?
         public let instanceType: String
         public let key: InstanceKeyPair?
         public let subnetId: String?
-        public let securityGroupIds: [String]?
+        public let securityGroupId: InstanceSecurityGroup?
         public let userData: String?
         public let volumes: [InstanceVolume]?
         public let iamRoleArn: String?
@@ -48,7 +53,7 @@ extension AWS {
             instanceType: String = "t3.micro",
             key: InstanceKeyPair? = nil,
             subnetId: String? = nil,
-            securityGroupIds: [String]? = nil,
+            securityGroupId: InstanceSecurityGroup? = nil,
             userData: String? = nil,
             volumes: [InstanceVolume]? = nil,
             iamRoleArn: String? = nil,
@@ -60,7 +65,7 @@ extension AWS {
             self.instanceType = instanceType
             self.key = key
             self.subnetId = subnetId
-            self.securityGroupIds = securityGroupIds
+            self.securityGroupId = securityGroupId
             self.userData = userData
             self.volumes = volumes
             self.iamRoleArn = iamRoleArn
@@ -124,13 +129,13 @@ extension AWS {
             // Optionally create a NetworkInterface when explicit security groups are provided
             // or when an Elastic IP must be associated to a specific interface.
             var nicResource: Resource? = nil
-            if args.securityGroupIds != nil || args.associateElasticIP {
+            if args.securityGroupId != nil || args.associateElasticIP {
                 nicResource = Resource(
                     name: nicLogicalName,
                     type: "aws:ec2:NetworkInterface",
                     properties: [
                         "subnetId": args.subnetId,
-                        "securityGroups": args.securityGroupIds,
+                        "securityGroups": [args.securityGroupId],
                         "description": "\(instanceLogicalName)-nic",
                     ],
                     options: nil,
@@ -174,7 +179,7 @@ extension AWS {
                 instanceProperties["subnetId"] = nil
             } else {
                 instanceProperties["subnetId"] = .init(args.subnetId)
-                instanceProperties["vpcSecurityGroupIds"] = .init(args.securityGroupIds)
+                instanceProperties["vpcSecurityGroupIds"] = .init(args.securityGroupId.map { [$0] } ?? [])
             }
 
             // Attach IAM instance profile if an IAM role ARN is provided.
