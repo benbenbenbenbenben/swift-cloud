@@ -138,13 +138,20 @@ extension AWS {
             // or when an Elastic IP must be associated to a specific interface.
             var nicResource: Resource? = nil
             if args.securityGroupId != nil || args.associateElasticIP {
+                precondition(
+                    args.subnetId != nil,
+                    "Creating a network interface requires subnetId to be set when specifying securityGroupId or associateElasticIP"
+                )
+
                 nicResource = Resource(
                     name: nicLogicalName,
                     type: "aws:ec2:NetworkInterface",
                     properties: [
-                        "subnetId": args.subnetId,
-                        "securityGroups": [args.securityGroupId?.existingId()],
-                        "description": "\(instanceLogicalName)-nic",
+                        // wrap values in AnyEncodable-compatible initializers so Pulumi receives them correctly
+                        "subnetId": .init(args.subnetId),
+                        // If a security group was provided, convert to an array of outputs; otherwise empty array.
+                        "securityGroups": .init(args.securityGroupId.map { [$0.existingId()] } ?? []),
+                        "description": .init("\(instanceLogicalName)-nic"),
                     ],
                     options: nil,
                     context: .current
@@ -181,10 +188,14 @@ extension AWS {
             // When a NIC is created, attach it to the instance via networkInterfaces block.
             if let nic = nicResource {
                 instanceProperties["networkInterfaces"] = [
-                    ["networkInterfaceId": nic.output]
+                    [
+                        "networkInterfaceId": nic.output.keyPath("id"),
+                        "deviceIndex": 0,
+                    ]
                 ]
                 // Do not set subnetId or vpcSecurityGroupIds when using a network interface.
                 instanceProperties["subnetId"] = nil
+                instanceProperties["vpcSecurityGroupIds"] = nil
             } else {
                 instanceProperties["subnetId"] = .init(args.subnetId)
                 instanceProperties["vpcSecurityGroupIds"] = .init(args.securityGroupId.map { [$0] } ?? [])

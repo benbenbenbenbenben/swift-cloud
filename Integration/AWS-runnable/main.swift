@@ -5,6 +5,8 @@ import Foundation
 @main
 struct aws: AWSProject {
     func build() async throws -> CloudCore.Outputs {
+        let vpc = AWS.VPC.default()
+        let firstSubnet = vpc.publicSubnetIds.keyPath("[0]")
         let instance = AWS.Instance(
             "example-instance",
             args: .init(
@@ -12,6 +14,7 @@ struct aws: AWSProject {
                 key: .imported(
                     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDlHOrgzwDpMuQflITL0xS8DgQ0ukf4M9eXrwjIL9RfL eddsa-key-20250815"
                 ),
+                subnetId: "\(firstSubnet)",
                 securityGroupId: .new(
                     .init(
                         "example-instance-security-group",
