@@ -76,5 +76,15 @@ let package = Package(
             name: "CloudCoreTests",
             dependencies: ["CloudCore"]
         ),
+        .testTarget(
+            name: "CloudCoreIntegrationTestsAWS",
+            dependencies: ["CloudCore", "CloudAWS"],
+            path: "Integration/AWS"
+        ),
+        .executableTarget(
+            name: "aws",
+            dependencies: ["CloudCore", "CloudAWS"],
+            path: "Integration/AWS-runnable"
+        )
     ]
 )
