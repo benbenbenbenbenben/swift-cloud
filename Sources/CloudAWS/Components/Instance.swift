@@ -98,11 +98,11 @@ extension AWS {
         public let dnsName: Output<String>
 
         // Internal references to Pulumi resources (concrete types)
-        private let instanceResource: Resource
-        private var eipResource: Resource? = nil
-        private var volumeResources: [Resource] = []
-        private var networkInterface: Resource? = nil
-        private var keyPairResource: Resource? = nil
+        public let instanceResource: Resource
+        public var eipResource: Resource? = nil
+        public var volumeResources: [Resource] = []
+        public var networkInterface: Resource? = nil
+        public var keyPairResource: Resource? = nil
 
         public var name: Output<String> {
             instanceResource.name
