@@ -99,10 +99,10 @@ extension AWS {
 
         // Internal references to Pulumi resources (concrete types)
         public let instanceResource: Resource
-        public var eipResource: Resource? = nil
-        public var volumeResources: [Resource] = []
-        public var networkInterface: Resource? = nil
-        public var keyPairResource: Resource? = nil
+        public let eipResource: Resource?
+        public let volumeResources: [Resource]
+        public let networkInterface: Resource?
+        public let keyPairResource: Resource?
 
         public var name: Output<String> {
             instanceResource.name
@@ -152,7 +152,7 @@ extension AWS {
                     type: "aws:ec2:NetworkInterface",
                     properties: [
                         // wrap values in AnyEncodable-compatible initializers so Pulumi receives them correctly
-                        "subnetId": .init(args.subnetId),
+                        "subnetId": .init(args.subnetId!),
                         // If a security group was provided, convert to an array of outputs; otherwise empty array.
                         "securityGroups": .init(args.securityGroupId.map { [$0.existingId()] } ?? []),
                         "description": .init("\(instanceLogicalName)-nic"),
@@ -160,7 +160,6 @@ extension AWS {
                     options: nil,
                     context: .current
                 )
-                networkInterface = nicResource!
             }
 
             // Build instance properties.
@@ -178,15 +177,18 @@ extension AWS {
                 case .named(let existingName):
                     // Use the provided key name as-is (references an existing key)
                     instanceProperties["keyName"] = .init(existingName)
+                    keyPairResource = nil
                 case .imported(let publicKey):
                     // Create a KeyPair component and reference its name
                     let kp = AWS.KeyPair("\(name)-key", publicKey: publicKey)
                     keyPairResource = kp.key
                     instanceProperties["keyName"] = .init(kp.id)
                 }
+
             } else {
                 // No key specified — leave keyName unset to allow provider defaults
                 instanceProperties["keyName"] = nil
+                keyPairResource = nil
             }
 
             // When a NIC is created, attach it to the instance via networkInterfaces block.
