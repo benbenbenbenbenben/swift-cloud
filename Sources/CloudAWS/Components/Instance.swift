@@ -85,7 +85,11 @@ extension AWS {
 
     /// EC2 Instance component skeleton. Conforms to the project's component pattern.
     /// TODO: replace "Any" / placeholder types with concrete CloudCore/CloudAWS types as appropriate.
-    public struct Instance: AWSComponent {
+    public struct Instance: AWSComponent, ResourceProvider {
+        public var resource: Resource {
+            instanceResource
+        }
+
         // Public outputs
         public let arn: Output<String>
         public let instanceId: Output<String>
