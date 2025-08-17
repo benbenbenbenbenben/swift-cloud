@@ -85,6 +85,11 @@ let package = Package(
             name: "aws",
             dependencies: ["CloudCore", "CloudAWS"],
             path: "Integration/AWS-runnable"
+        ),
+        .executableTarget(
+            name: "scope",
+            dependencies: ["CloudCore", "CloudAWS"],
+            path: "Integration/pulumi-scope-runnable"
         )
     ]
 )

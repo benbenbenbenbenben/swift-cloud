@@ -116,7 +116,7 @@ extension Pulumi.Client {
         }
 
         var environment = Files.currentEnvironment()
-        environment["PATH"] = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        environment["PATH"] = (environment["PATH"]?.appending(":") ?? "") + "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
         environment["PULUMI_CONFIG_PASSPHRASE"] = self.passphrase
         environment["PULUMI_SKIP_UPDATE_CHECK"] = "true"
         environment["PULUMI_EXPERIMENTAL"] = "true"

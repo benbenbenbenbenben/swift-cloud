@@ -4,6 +4,7 @@ import Foundation
 
 @main
 struct aws: AWSProject {
+    let region: String = "us-east-1"
     func build() async throws -> CloudCore.Outputs {
         let vpc = AWS.VPC.default()
         let firstSubnet = vpc.publicSubnetIds.keyPath("[0]")
